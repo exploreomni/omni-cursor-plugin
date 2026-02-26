@@ -1,0 +1,22 @@
+{
+  "name": "omni-analytics",
+  "version": "1.0.0",
+  "description": "Explore, query, model, and manage Omni Analytics through the REST API. Includes 7 skills for model exploration, querying, model building, content browsing, dashboard creation, AI optimization, and administration — plus 3 specialized subagents and always-on rules for API conventions.",
+  "author": {
+    "name": "Omni Analytics",
+    "email": "support@omni.co"
+  },
+  "logo": "assets/logo.png",
+  "keywords": [
+    "omni",
+    "analytics",
+    "bi",
+    "business-intelligence",
+    "semantic-layer",
+    "data-modeling",
+    "dashboards",
+    "queries",
+    "blobby",
+    "ai-context"
+  ]
+}
