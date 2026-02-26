@@ -121,10 +121,6 @@ omni-cursor-skills/
 - [Omni MCP Server](https://docs.omni.co/ai/mcp) (complementary — this plugin uses the REST API directly)
 - [Cursor Plugin Docs](https://cursor.com/docs/plugins)
 
-## Also Available For
-
-- [Claude Code](https://github.com/omni-co/omni-claude-skills) — same skills packaged as a Claude Code plugin
-
 ## Contributing
 
 Contributions welcome! Please open an issue or PR.
