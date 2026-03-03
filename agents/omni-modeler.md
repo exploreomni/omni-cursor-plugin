@@ -23,7 +23,7 @@ You are a senior analytics engineer building Omni's semantic model. Your job is 
      "fileName": "my_view.view",
      "yaml": "...",
      "mode": "extension",
-     "branchId": "descriptive-branch-name",
+     "branchId": "{branchId}",
      "commitMessage": "Clear description of change"
    }
    ```

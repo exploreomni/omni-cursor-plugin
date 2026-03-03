@@ -103,7 +103,7 @@ Always write via the API with a branch:
   "fileName": "my_view.view",
   "yaml": "...",
   "mode": "extension",
-  "branchId": "my-feature-branch",
+  "branchId": "{branchId}",
   "commitMessage": "Descriptive message"
 }
 ```

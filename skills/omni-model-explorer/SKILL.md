@@ -29,9 +29,15 @@ Explore top-down: **List models → Pick a model → List topics → Inspect a t
 ```bash
 curl -L "$OMNI_BASE_URL/api/v1/models" \
   -H "Authorization: Bearer $OMNI_API_KEY"
+
+# Include active branches on each model
+curl -L "$OMNI_BASE_URL/api/v1/models?include=activeBranches" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
 ```
 
 Returns models with `id`, `name`, `connectionId`, and `modelKind` (SCHEMA or SHARED). Use the SHARED model — it contains the curated semantic layer.
+
+When `include=activeBranches` is set, each model record includes a `branches` array. Each branch has an `id` (UUID) and `name` — use the branch `id` as `branchId` in YAML read/write endpoints.
 
 ### Step 2: List Topics in a Model
 
@@ -66,19 +72,19 @@ For the full semantic model definition:
 
 ```bash
 # All YAML files
-curl -L "$OMNI_BASE_URL/api/unstable/models/{modelId}/yaml" \
+curl -L "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml" \
   -H "Authorization: Bearer $OMNI_API_KEY"
 
 # Specific file
-curl -L "$OMNI_BASE_URL/api/unstable/models/{modelId}/yaml?fileName=order_items.view" \
+curl -L "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml?fileName=order_items.view" \
   -H "Authorization: Bearer $OMNI_API_KEY"
 
 # Regex filter
-curl -L "$OMNI_BASE_URL/api/unstable/models/{modelId}/yaml?fileNameRegex=.*sales.*" \
+curl -L "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml?fileName=.*sales.*" \
   -H "Authorization: Bearer $OMNI_API_KEY"
 
-# From a branch
-curl -L "$OMNI_BASE_URL/api/unstable/models/{modelId}/yaml?branchId={branchId}" \
+# From a branch (branchId is a UUID from the list models response)
+curl -L "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml?branchId={branchId}" \
   -H "Authorization: Bearer $OMNI_API_KEY"
 ```
 

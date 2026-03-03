@@ -41,7 +41,7 @@ Skills activate automatically based on your request:
 | **omni-model-builder** | Create and edit views, topics, dimensions, measures, and relationships in YAML |
 | **omni-query** | Run queries against Omni's semantic layer and interpret results |
 | **omni-content-explorer** | Find, browse, and organize dashboards, workbooks, and folders |
-| **omni-content-builder** | Create and update dashboards programmatically — tiles, filters, layouts |
+| **omni-content-builder** |  Create, update, and manage documents and dashboards programmatically — lifecycle, tiles, filters, layouts |
 | **omni-ai-optimizer** | Optimize your Omni model for Blobby (Omni's AI assistant) |
 | **omni-admin** | Manage connections, users, groups, permissions, and schedules |
 
