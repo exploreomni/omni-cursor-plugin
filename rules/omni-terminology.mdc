@@ -45,5 +45,5 @@ The `mode` parameter in the YAML API controls which layer you write to:
 ## Key URL Patterns
 
 - Base URL: `$OMNI_BASE_URL` (e.g., `https://yourorg.omniapp.co`)
-- API docs: `https://docs.omni.co/api`
-- Modeling docs: `https://docs.omni.co/modeling`
+- API docs: `https://docs.omni.co/api.md`
+- Modeling docs: `https://docs.omni.co/modeling.md`

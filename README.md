@@ -115,10 +115,10 @@ omni-cursor-skills/
 
 ## Documentation
 
-- [Omni REST API Reference](https://docs.omni.co/api)
-- [Omni Modeling Documentation](https://docs.omni.co/modeling)
-- [Omni AI Optimization Guide](https://docs.omni.co/ai/optimize-models)
-- [Omni MCP Server](https://docs.omni.co/ai/mcp) (complementary — this plugin uses the REST API directly)
+- [Omni REST API Reference](https://docs.omni.co/api.md)
+- [Omni Modeling Documentation](https://docs.omni.co/modeling.md)
+- [Omni AI Optimization Guide](https://docs.omni.co/ai/optimize-models.md)
+- [Omni MCP Server](https://docs.omni.co/ai/mcp.md) (complementary — this plugin uses the REST API directly)
 - [Cursor Plugin Docs](https://cursor.com/docs/plugins)
 
 ## Contributing
