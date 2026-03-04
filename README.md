@@ -15,7 +15,7 @@ Search for "Omni Analytics" in the Cursor Marketplace or run:
 ### From Git URL
 
 ```
-/add-plugin https://github.com/omni-co/omni-cursor-skills
+/add-plugin https://github.com/exploreomni/omni-cursor-plugin.git
 ```
 
 ## Setup
@@ -90,7 +90,7 @@ For complex workflows, invoke subagents directly:
 ## Repository Structure
 
 ```
-omni-cursor-skills/
+omni-cursor-plugin/
 ├── .cursor-plugin/
 │   └── plugin.json                ← Plugin manifest
 ├── skills/
