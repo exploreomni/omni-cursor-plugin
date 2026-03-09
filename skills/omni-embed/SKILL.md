@@ -7,7 +7,7 @@ description: Embed Omni Analytics dashboards in external applications — URL si
 
 Embed Omni dashboards in external applications using signed iframe URLs. The `@omni-co/embed` SDK handles URL signing and theme customization. Omni's postMessage events enable two-way communication between the parent app and embedded iframe.
 
-> **Tip**: See `omni-api-conventions` rule for auth patterns. Use `omni-content-explorer` to find dashboards to embed, and `omni-admin` to manage embed user permissions and user attributes for row-level security.
+> **Tip**: Use `omni-content-explorer` to find dashboards to embed, and `omni-admin` to manage embed user permissions and user attributes for row-level security.
 
 ## Prerequisites
 
@@ -22,6 +22,17 @@ export OMNI_API_KEY="your-api-key"                         # For user/content AP
 ```
 
 The embed secret is found in **Admin → Embed** in your Omni instance. The `OMNI_BASE_URL` for embedding uses the `.embed-omniapp.co` domain, not the standard `.omniapp.co` domain.
+
+## API Discovery
+
+When unsure whether an endpoint or parameter exists, fetch the OpenAPI spec:
+
+```bash
+curl -L "$OMNI_BASE_URL/openapi.json" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
+```
+
+Use this to verify endpoints, available parameters, and request/response schemas before making calls.
 
 ## Signing Embed URLs
 

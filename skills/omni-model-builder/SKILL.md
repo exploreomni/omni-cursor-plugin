@@ -7,7 +7,7 @@ description: Create and edit Omni Analytics semantic model definitions — views
 
 Create and modify Omni's semantic model through the YAML API — views, topics, dimensions, measures, relationships, and query views.
 
-> **Tip**: See `omni-yaml-conventions` rule for YAML syntax patterns. See `omni-api-conventions` rule for auth. Always use `omni-model-explorer` first to understand the existing model.
+> **Tip**: Always use `omni-model-explorer` first to understand the existing model.
 
 ## Prerequisites
 
@@ -17,6 +17,17 @@ export OMNI_API_KEY="your-api-key"
 ```
 
 You need **Modeler** or **Connection Admin** permissions.
+
+## API Discovery
+
+When unsure whether an endpoint or parameter exists, fetch the OpenAPI spec:
+
+```bash
+curl -L "$OMNI_BASE_URL/openapi.json" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
+```
+
+Use this to verify endpoints, available parameters, and request/response schemas before making calls.
 
 ## Safe Development Workflow
 
@@ -37,7 +48,7 @@ curl -L -X POST "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml" \
   }'
 ```
 
-To find branch IDs, list models with `include=activeBranches` — each branch has an `id` (UUID) and `name`. Use the branch `id` as `branchId`. If the branch doesn't exist yet, Omni creates it.
+`branchId` is a UUID — retrieve it from the List Models endpoint with `?include=activeBranches`. If the branch doesn't exist yet, Omni creates it.
 
 ### Step 2: Validate
 
@@ -92,16 +103,20 @@ measures:
 
 ### Dimension Parameters
 
+See `references/modelParameters.md` for the complete list of 35+ dimension parameters, format values, and timeframes.
+
+Most common parameters:
 - `sql` — SQL expression using `${field_name}` references
 - `label` — display name · `description` — help text (also used by Blobby)
 - `primary_key: true` — unique key (critical for aggregations)
 - `hidden: true` — hides from picker, still usable in SQL
 - `format` — `number_2`, `currency_2`, `percent_2`, `id`
 - `group_label` — groups fields in the picker
+- `synonyms` — alternative names for AI matching (e.g., `[client, account, buyer]`)
 
 ### Measure Parameters
 
-Aggregate types: `count`, `count_distinct`, `sum`, `average`, `min`, `max`, `median`
+See `references/modelParameters.md` for the complete list of 24+ measure parameters and all 13 aggregate types.
 
 Measure filters restrict rows before aggregation:
 
@@ -124,29 +139,15 @@ Filter conditions: `is`, `is_not`, `greater_than`, `less_than`, `contains`, `sta
 
 ## Writing Topics
 
-```yaml
-base_view: order_items
-label: Order Transactions
-description: Line-item order data for revenue and product analysis
+See [Topics setup](https://docs.omni.co/modeling/topics/setup.md) for complete YAML examples with joins, fields, and ai_context, and [Topic parameters](https://docs.omni.co/modeling/topics/parameters.md) for all available options.
 
-ai_context: |
-  Map "revenue" → total_revenue. Map "orders" → count.
-  Status values: complete, pending, cancelled, returned.
-  Only "complete" orders for revenue unless specified otherwise.
-
-joins:
-  users: {}
-  inventory_items:
-    products: {}
-
-default_filters:
-  order_items.status:
-    not: [Returned, Cancelled]
-```
-
-Nested joins indicate join chains. Use `always_where_sql` for non-removable filters.
-
-Field curation: `fields: [order_items.*, users.name, -users.internal_id]`
+Key topic elements:
+- `base_view` — the primary view for this topic
+- `joins` — nested structure for join chains (e.g., `users: {}` or `inventory_items: { products: {} }`)
+- `ai_context` — guides Blobby's field mapping (e.g., "Map 'revenue' → total_revenue")
+- `default_filters` — applied to all queries unless removed
+- `always_where_sql` — non-removable filters
+- `fields` — field curation: `[order_items.*, users.name, -users.internal_id]`
 
 ## Writing Relationships
 
