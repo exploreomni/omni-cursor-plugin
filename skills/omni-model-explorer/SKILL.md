@@ -7,7 +7,7 @@ description: Discover and inspect Omni Analytics models, topics, views, fields, 
 
 Explore and understand an Omni semantic model through the REST API. This is the starting point — understand what exists before building, querying, or modifying anything.
 
-> **Tip**: See the `omni-api-conventions` rule for authentication and error handling patterns. See `omni-terminology` for Omni concept definitions.
+> **Tip**: Start with the **Shared** model — it contains the curated analytics layer.
 
 ## Prerequisites
 
@@ -20,6 +20,17 @@ export OMNI_API_KEY="your-api-key"
 
 API keys: Settings > API Keys (Organization Admin) or User Profile > Manage Account > Generate Token (Personal Access Token).
 
+## API Discovery
+
+When unsure whether an endpoint or parameter exists, fetch the OpenAPI spec:
+
+```bash
+curl -L "$OMNI_BASE_URL/openapi.json" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
+```
+
+Use this to verify endpoints, available parameters, and request/response schemas before making calls.
+
 ## Core Workflow
 
 Explore top-down: **List models → Pick a model → List topics → Inspect a topic → Explore views and fields**.
@@ -29,15 +40,18 @@ Explore top-down: **List models → Pick a model → List topics → Inspect a t
 ```bash
 curl -L "$OMNI_BASE_URL/api/v1/models" \
   -H "Authorization: Bearer $OMNI_API_KEY"
-
-# Include active branches on each model
-curl -L "$OMNI_BASE_URL/api/v1/models?include=activeBranches" \
-  -H "Authorization: Bearer $OMNI_API_KEY"
 ```
 
 Returns models with `id`, `name`, `connectionId`, and `modelKind` (SCHEMA or SHARED). Use the SHARED model — it contains the curated semantic layer.
 
-When `include=activeBranches` is set, each model record includes a `branches` array. Each branch has an `id` (UUID) and `name` — use the branch `id` as `branchId` in YAML read/write endpoints.
+To also see active branches on each model:
+
+```bash
+curl -L "$OMNI_BASE_URL/api/v1/models?include=activeBranches" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
+```
+
+Each model in the response will include a `branches` array. Each branch has an `id` (UUID) and `name` — use the `id` as the `branchId` parameter in other API calls.
 
 ### Step 2: List Topics in a Model
 
@@ -117,6 +131,37 @@ When exploring, use the `combined` view to see everything available.
 **"How do these tables relate?"** — Inspect the topic's `relationships[]` — check `join_from_view`, `join_to_view`, `on_sql`, and `relationship_type`.
 
 **"What measures are available for Y?"** — Inspect the topic containing view Y → review the `measures[]` array with `aggregate_type` and `sql` definitions.
+
+## Calculation Fields
+
+Calculation fields in the model use a different format than regular dimensions/measures. The field key is `calc_name` and the expression property is `sql_expression` — not `name`/`sql`.
+
+## Field Impact Analysis
+
+Assess the blast radius of a field migration or removal before pushing changes to dbt:
+
+1. **Create a model branch** with `omni-model-builder` where the field is removed or renamed
+2. **Run the content validator** against that branch:
+
+```bash
+curl -L "$OMNI_BASE_URL/api/v1/models/{modelId}/content-validator?branchId={branchId}" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
+```
+
+This returns all dashboards and tiles with broken references to the removed field.
+
+3. **Search model YAML** for additional references (run in parallel with step 2):
+
+```bash
+curl -L "$OMNI_BASE_URL/api/v1/models/{modelId}/yaml?fileName=.*" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
+```
+
+Search the response for the field name to find references in other views, topics, and calculated fields.
+
+4. **Report**: Combine content-validator results (broken dashboards/tiles) with YAML search results (model references) into a structured blast-radius report.
+
+> Do NOT paginate documents and check queries individually — the content validator does this for you in one call.
 
 ## Docs Reference
 

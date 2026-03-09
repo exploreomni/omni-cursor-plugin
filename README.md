@@ -31,7 +31,7 @@ API keys are created in **Settings > API Keys** (Organization Admin) or **User P
 
 ## What's Included
 
-### Skills (7)
+### Skills (8)
 
 Skills activate automatically based on your request:
 
@@ -43,6 +43,7 @@ Skills activate automatically based on your request:
 | **omni-content-explorer** | Find, browse, and organize dashboards, workbooks, and folders |
 | **omni-content-builder** |  Create, update, and manage documents and dashboards programmatically — lifecycle, tiles, filters, layouts |
 | **omni-ai-optimizer** | Optimize your Omni model for Blobby (Omni's AI assistant) |
+| **omni-embed** | Embed Omni dashboards in external applications — URL signing, themes, and postMessage events |
 | **omni-admin** | Manage connections, users, groups, permissions, and schedules |
 
 ### Subagents (3)
@@ -95,11 +96,18 @@ omni-cursor-plugin/
 │   └── plugin.json                ← Plugin manifest
 ├── skills/
 │   ├── omni-model-explorer/SKILL.md
-│   ├── omni-query/SKILL.md
-│   ├── omni-model-builder/SKILL.md
+│   ├── omni-query/
+│   │   ├── SKILL.md
+│   │   └── references/
+│   ├── omni-model-builder/
+│   │   ├── SKILL.md
+│   │   └── references/
 │   ├── omni-content-explorer/SKILL.md
-│   ├── omni-content-builder/SKILL.md
+│   ├── omni-content-builder/
+│   │   ├── SKILL.md
+│   │   └── references/
 │   ├── omni-ai-optimizer/SKILL.md
+│   ├── omni-embed/SKILL.md
 │   └── omni-admin/SKILL.md
 ├── agents/
 │   ├── omni-analyst.md

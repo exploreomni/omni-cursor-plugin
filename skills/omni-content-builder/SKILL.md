@@ -9,12 +9,30 @@ Create, update, and manage Omni documents and dashboards programmatically via th
 
 > **Tip**: Use `omni-model-explorer` to understand available fields and `omni-content-explorer` to find existing dashboards to modify or learn from.
 
+## Known Issues & Safe Defaults
+
+- **Chart rendering**: Complex chart types may show "No chart available" in the Omni UI if `config`, `visType`, or `prefersChart` are misconfigured. Default to `chartType: "table"` for reliable rendering, and configure chart visualizations in the Omni UI.
+- **Every query must include at least one measure** — a query with only dimensions produces empty/nonsense tiles (e.g., just months with no data).
+- **Use `identifier` not `id`** for all document API calls — `.id` is null for workbook-type documents and will silently fail.
+- **Boolean filters may be silently dropped** when a `pivots` array is present (reported Omni bug). If boolean filters aren't applying, remove the pivot and test again.
+
 ## Prerequisites
 
 ```bash
 export OMNI_BASE_URL="https://yourorg.omniapp.co"
 export OMNI_API_KEY="your-api-key"
 ```
+
+## API Discovery
+
+When unsure whether an endpoint or parameter exists, fetch the OpenAPI spec:
+
+```bash
+curl -L "$OMNI_BASE_URL/openapi.json" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
+```
+
+Use this to verify endpoints, available parameters, and request/response schemas before making calls.
 
 ## Dashboard Architecture
 
@@ -43,7 +61,9 @@ Returns the new document's `identifier`, `workbookId`, and `dashboardId`.
 
 ### Create Document with Queries and Visualizations
 
-Use `queryPresentations` to create a document pre-populated with query tabs and visualization configurations:
+Use `queryPresentations` to create a document pre-populated with query tabs and visualization configurations.
+
+> **Doc gap**: The [create-document API docs](https://docs.omni.co/api/documents/create-document.md) mention queryPresentations but don't show the complete structure. This section documents the full format.
 
 ```bash
 curl -L -X POST "$OMNI_BASE_URL/api/v1/documents" \
@@ -54,8 +74,43 @@ curl -L -X POST "$OMNI_BASE_URL/api/v1/documents" \
     "name": "Q1 Revenue Report",
     "queryPresentations": [
       {
+        "name": "Total Revenue",
+        "topicName": "order_items",
+        "prefersChart": true,
+        "visType": "omni-kpi",
+        "fields": ["order_items.total_revenue"],
+        "query": {
+          "table": "order_items",
+          "fields": ["order_items.total_revenue"],
+          "join_paths_from_topic_name": "order_items",
+          "visConfig": { "chartType": "kpi" }
+        },
+        "config": {
+          "alignment": "left",
+          "verticalAlignment": "top",
+          "markdownConfig": [
+            {
+              "id": "kpi-1",
+              "type": "number",
+              "config": {
+                "field": {
+                  "row": "_first",
+                  "field": { "name": "order_items.total_revenue", "pivotMap": {} },
+                  "label": { "value": "Total Revenue" }
+                },
+                "descriptionBefore": ""
+              }
+            }
+          ]
+        }
+      },
+      {
         "name": "Monthly Revenue Trend",
         "description": "Revenue by month for the current quarter",
+        "topicName": "order_items",
+        "prefersChart": true,
+        "visType": "basic",
+        "fields": ["order_items.created_at[month]", "order_items.total_revenue"],
         "query": {
           "table": "order_items",
           "fields": [
@@ -65,43 +120,86 @@ curl -L -X POST "$OMNI_BASE_URL/api/v1/documents" \
           "sorts": [
             { "column_name": "order_items.created_at[month]", "sort_descending": false }
           ],
-          "filters": {
-            "order_items.created_at": "this quarter"
-          },
+          "filters": { "order_items.created_at": "this quarter" },
           "limit": 100,
-          "join_paths_from_topic_name": "order_items"
+          "join_paths_from_topic_name": "order_items",
+          "visConfig": { "chartType": "lineColor" }
         },
-        "visConfig": {
-          "chartType": "lineColor"
+        "config": {
+          "x": { "field": { "name": "order_items.created_at[month]" } },
+          "mark": { "type": "line" },
+          "color": {},
+          "series": [{ "field": { "name": "order_items.total_revenue" }, "yAxis": "y" }],
+          "tooltip": [
+            { "field": { "name": "order_items.created_at[month]" } },
+            { "field": { "name": "order_items.total_revenue" } }
+          ],
+          "version": 0,
+          "behaviors": { "stackMultiMark": false },
+          "configType": "cartesian",
+          "_dependentAxis": "y"
         }
       },
       {
-        "name": "Top Products",
-        "description": "Best selling products by revenue",
+        "name": "Revenue by Status",
+        "topicName": "order_items",
+        "prefersChart": true,
+        "visType": "basic",
+        "chartType": "barGrouped",
+        "fields": ["order_items.status", "order_items.total_revenue"],
         "query": {
           "table": "order_items",
           "fields": [
-            "products.name",
-            "order_items.total_revenue",
-            "order_items.count"
+            "order_items.status",
+            "order_items.total_revenue"
           ],
           "sorts": [
             { "column_name": "order_items.total_revenue", "sort_descending": true }
           ],
-          "filters": {
-            "order_items.created_at": "this quarter",
-            "order_items.status": "complete"
-          },
           "limit": 10,
-          "join_paths_from_topic_name": "order_items"
+          "join_paths_from_topic_name": "order_items",
+          "visConfig": { "chartType": "barColor" }
         },
-        "visConfig": {
-          "chartType": "barColor"
+        "config": {
+          "y": { "field": { "name": "order_items.status" } },
+          "mark": { "type": "bar" },
+          "color": { "_stack": "group" },
+          "series": [{ "field": { "name": "order_items.total_revenue" }, "xAxis": "x" }],
+          "tooltip": [
+            { "field": { "name": "order_items.status" } },
+            { "field": { "name": "order_items.total_revenue" } }
+          ],
+          "version": 0,
+          "behaviors": { "stackMultiMark": false },
+          "configType": "cartesian",
+          "_dependentAxis": "x"
         }
       }
     ]
   }'
 ```
+
+#### Key Parameters (not fully documented elsewhere)
+
+| Parameter | Notes |
+|-----------|-------|
+| `modelId` | Use the **base shared model UUID**, not a branchId. Get this from the List Models API. |
+| Field format | `table.field_name` or `table.field_name[week\|month\|day\|quarter\|year]` for time granularity |
+| `sorts` | `column_name` must match the **exact field string** (e.g., `"order_items.created_at[month]"`), with `sort_descending` boolean |
+
+#### queryPresentation Object Reference
+
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `name` | Yes | Tile/tab title |
+| `topicName` | Recommended | Topic name for the query — set this whenever querying from a topic. Ensures correct join context in the dashboard. |
+| `prefersChart` | Yes | **Must be `true` to render a chart.** Without this, Omni always shows the results table regardless of any other vis settings. |
+| `visType` | Yes | Visualization renderer: `"omni-kpi"` for KPI tiles, `"basic"` for all standard charts (line, bar, area, scatter, pie, etc.). |
+| `fields` | Yes | Duplicate of `query.fields` — must be present at this level too. |
+| `config` | Yes | Chart-specific configuration object. Shape varies by chart type — read a reference dashboard to get the exact structure. |
+| `chartType` | No | Optional chart subtype at the presentation level (e.g. `"barGrouped"`). |
+| `description` | No | Tile description. |
+| `query` | Yes | Query definition (see below). |
 
 #### Query Object Reference
 
@@ -114,33 +212,41 @@ The `query` object within each query presentation uses the same structure as the
 | `sorts` | No | Array of `{ "column_name": "...", "sort_descending": bool }` |
 | `filters` | No | Object of `{ "field_name": "expression" }` — supports `"last 90 days"`, `"this quarter"`, `">100"`, etc. |
 | `limit` | No | Row limit (default 1000, max 50000) |
-| `join_paths_from_topic_name` | Recommended | Topic name for join resolution |
+| `join_paths_from_topic_name` | Recommended | Topic name for join resolution — set this alongside `topicName` on the parent queryPresentation. |
 | `pivots` | No | Array of field names to pivot on |
 
 > **Note**: `modelId` is not needed inside the query object — it's inherited from the document's top-level `modelId`.
 
 #### visConfig Object
 
-The `visConfig` object controls how each query is visualized. The `chartType` field sets the visualization type. Common values include:
+`visConfig` belongs **inside the `query` object** — not at the `queryPresentation` level. When passed as a sibling of `query`, it is silently dropped by the API.
+
+`visConfig` alone does **not** control chart rendering. It stores the chart type hint on the query, but the actual rendering is driven by `prefersChart`, `visType`, and `config` at the `queryPresentation` level.
+
+**chartType values**:
 
 | chartType | Visualization |
 |-----------|--------------|
+| `kpi` | KPI / single value |
 | `lineColor` | Line chart |
 | `barColor` | Bar chart |
-| `stackedBarColor` | Stacked bar chart |
 | `areaColor` | Area chart |
-| `scatter` | Scatter plot |
+| `stackedBarColor` | Stacked bar chart |
 | `pie` | Pie / donut chart |
-| `kpi` | KPI / single value |
-| `table` | Data table |
+| `scatter` | Scatter plot |
 | `heatmap` | Heatmap |
 | `map` | Map visualization |
+| `table` | Data table |
 
-The `visConfig` supports many additional fields beyond `chartType` (axis labels, color palettes, legend position, formatting, etc.). These are not fully documented in the public API — **read existing dashboards to discover the full structure**.
+#### config Object
 
-### Discovering visConfig from Existing Dashboards
+The `config` object at the `queryPresentation` level defines the actual chart rendering. Its structure varies by chart type — see [references/queryPresentations.md](references/queryPresentations.md) for complete config examples by chart type.
 
-The most reliable way to learn the full `visConfig` and `query` structure is to read the queries from an existing dashboard:
+The most reliable way to get the correct `config` for a given chart type is to **build the chart in the Omni UI and read it back** via `GET /api/v1/documents/{documentId}`.
+
+### Discovering the Full queryPresentation Structure from Existing Dashboards
+
+The most reliable way to learn `config`, `visType`, and field names is to read an existing dashboard document:
 
 **Step 1: Find a reference dashboard**
 
@@ -149,16 +255,28 @@ curl -L "$OMNI_BASE_URL/api/v1/documents" \
   -H "Authorization: Bearer $OMNI_API_KEY"
 ```
 
-**Step 2: Get its query definitions**
+**Step 2: Get its full document**
 
 ```bash
-curl -L "$OMNI_BASE_URL/api/v1/documents/{dashboardId}/queries" \
+curl -L "$OMNI_BASE_URL/api/v1/documents/{documentId}" \
   -H "Authorization: Bearer $OMNI_API_KEY"
 ```
 
-Returns the `query` object for each tile. Study these to understand the exact field names, filter syntax, and sort patterns used in working dashboards, then reuse those patterns in your `queryPresentations`.
+Returns the complete `queryPresentations` array including `topicName`, `visConfig`, `config`, and the full `query` object for each tile — use this as the source of truth when recreating or templating dashboards.
 
-> **Tip**: Build a reference dashboard in the Omni UI with the chart types and styling you want, then read its queries to capture the exact configuration values to use as templates.
+> **Tip**: Build a reference dashboard in the Omni UI with the chart types and styling you want, then read it via `GET /api/v1/documents/{documentId}` to capture the exact `queryPresentations` structure to use as a template.
+
+#### Caveats When Copying queryPresentations from Existing Dashboards
+
+- **Strip `model_extension_id`** from each query object — these reference model extensions scoped to the source document and will cause "Chart unavailable" errors in new documents.
+- **Filter to the tiles you want** — `GET /api/v1/documents/{id}` returns all queries including workbook-only tabs not shown on the dashboard. Only pass the `queryPresentations` you want as visible tiles.
+- **Queries without `topicName` are valid** — SQL-mode and tab-selector queries won't have a `topicName`. Do not add one.
+
+#### Caveats when using queryPresentations from an existing document
+
+- **Filter to the tiles you want**: `get-dashboard-document` returns all queries including workbook-only tabs not shown on the dashboard. Pass only the `queryPresentations` you want as visible tiles — every entry you include will become a visible tile in the new document.
+- **Strip `model_extension_id`**: Some queries contain a `model_extension_id` that references a model extension scoped to the source document. These IDs are not valid in a new document and will cause "Chart unavailable" errors. Remove `model_extension_id` from each query object before posting.
+- **Queries without a topic are expected**: SQL-mode queries and tab-selector queries (`visType: "spreadsheet-tab"`) will not have a `topicName` — this is correct, do not add one.
 
 ### Rename Document
 
@@ -213,35 +331,29 @@ Only published documents can be duplicated. Draft documents return 404.
 
 ## Updating a Dashboard's Model
 
-Push custom dimensions and measures to a specific dashboard:
+Push custom dimensions and measures to a specific dashboard by writing to its workbook model. This is a two-step flow:
+
+**Step 1 — get the document to find its `workbook_id`:**
 
 ```bash
-curl -L -X POST "$OMNI_BASE_URL/api/unstable/documents/{documentId}/update-model" \
+curl -L "$OMNI_BASE_URL/api/v1/documents/{documentId}" \
+  -H "Authorization: Bearer $OMNI_API_KEY"
+# → response includes "workbook_id"
+```
+
+**Step 2 — POST YAML to the workbook model:**
+
+```bash
+curl -L -X POST "$OMNI_BASE_URL/api/unstable/models/{workbookId}/yaml" \
   -H "Authorization: Bearer $OMNI_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "yaml": {
-      "views": {
-        "order_items": {
-          "dimensions": {
-            "is_high_value": {
-              "sql": "${sale_price} > 100",
-              "label": "High Value Order"
-            }
-          },
-          "measures": {
-            "high_value_count": {
-              "sql": "${order_items.id}",
-              "aggregate_type": "count_distinct",
-              "label": "High Value Orders",
-              "filters": { "sale_price": { "greater_than": 100 } }
-            }
-          }
-        }
-      }
-    }
+    "fileName": "order_items.view",
+    "yaml": "views:\n  order_items:\n    dimensions:\n      is_high_value:\n        sql: \"${sale_price} > 100\"\n        label: High Value Order\n    measures:\n      high_value_count:\n        sql: \"${order_items.id}\"\n        aggregate_type: count_distinct\n        label: High Value Orders"
   }'
 ```
+
+`fileName` must be `"model"`, `"relationships"`, or end with `.view` or `.topic`. The `yaml` value is a YAML string (not a JSON object). Writing to a workbook model skips git sync entirely — authorization is still checked against the underlying shared model's permissions.
 
 ## Dashboard Filters
 
@@ -254,13 +366,19 @@ curl -L "$OMNI_BASE_URL/api/v1/dashboards/{dashboardId}/filters" \
 
 ### Update Filters
 
+> **Warning**: `PUT` and `PATCH` on `/dashboards/{id}/filters` have been reported to return 405 or 500 in some configurations. If filter updates fail, include filters during document creation instead (see below).
+
+The most reliable way to create dashboard filters is to include `filterConfig` and `filterOrder` in the initial `POST /api/v1/documents` call. See [references/filterConfig.md](references/filterConfig.md) for complete examples of each filter type.
+
 ```bash
-curl -L -X PUT "$OMNI_BASE_URL/api/v1/dashboards/{dashboardId}/filters" \
+curl -L -X POST "$OMNI_BASE_URL/api/v1/documents" \
   -H "Authorization: Bearer $OMNI_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "filters": {
-      "order_items.created_at": {
+    "modelId": "your-model-id",
+    "name": "Filtered Dashboard",
+    "filterConfig": {
+      "date_filter": {
         "type": "date",
         "label": "Date Range",
         "kind": "TIME_FOR_INTERVAL_DURATION",
@@ -268,15 +386,20 @@ curl -L -X PUT "$OMNI_BASE_URL/api/v1/dashboards/{dashboardId}/filters" \
         "left_side": "6 months ago",
         "right_side": "6 months"
       },
-      "users.state": {
+      "state_filter": {
         "type": "string",
         "label": "State",
         "kind": "EQUALS",
+        "fieldName": "users.state",
         "values": []
       }
-    }
+    },
+    "filterOrder": ["date_filter", "state_filter"],
+    "queryPresentations": [...]
   }'
 ```
+
+The keys in `filterConfig` (e.g., `"date_filter"`) are arbitrary IDs — they must match the entries in `filterOrder`. To learn the exact filter structure, read filters from an existing dashboard with `GET /api/v1/dashboards/{dashboardId}/filters`.
 
 ### Filter Types
 
@@ -290,22 +413,34 @@ curl -L -X PUT "$OMNI_BASE_URL/api/v1/dashboards/{dashboardId}/filters" \
 
 **Date Granularity Picker** — `type: "FIELD_SELECTION"`, `kind: "TIMEFRAME"` with options array
 
+## URL Patterns
+
+After creating or finding content, always provide the user a direct link:
+
+```
+Dashboard: {OMNI_BASE_URL}/dashboards/{identifier}
+Workbook:  {OMNI_BASE_URL}/w/{identifier}
+```
+
+The `identifier` comes from the document's `identifier` field in API responses (not `id`, which is null for workbooks).
+
 ## Recommended Build Workflows
 
 ### API-First (Full Programmatic Creation)
 
-1. **Prepare the Model** — use `omni-model-builder` for shared fields, or `update-model` for dashboard-specific fields
-2. **Read a Reference Dashboard** — get query definitions from an existing dashboard to learn field names, filter syntax, and visConfig patterns
-3. **Create Document with queryPresentations** — create the document with all queries and chart types in a single API call
-4. **Set Up Filters** — add dashboard-level filters via the filters API
-5. **Refine in UI** — adjust tile layout, fine-tune styling as needed
+Aim for minimal API calls. Batch everything into the document creation POST.
+
+1. **Discover fields** — use `omni-model-explorer` to find topic + fields (1-2 calls)
+2. **Optionally read a reference dashboard** — `GET /api/v1/documents/{id}` to capture `queryPresentations` patterns (1 call)
+3. **Create document** — single `POST /api/v1/documents` with `queryPresentations` + `filterConfig` + `filterOrder` all in one call
+4. **Share the link** — return `{OMNI_BASE_URL}/dashboards/{identifier}` to the user
+5. **Refine in UI** — tile layout, chart styling, and advanced config are best done in the Omni UI
 
 ### UI-First (Hybrid Approach)
 
 1. **Prepare the Model** — use `omni-model-builder` for shared fields, or `update-model` for dashboard-specific fields
-2. **Set Up Filters** — date range + granularity picker + key entity pickers + hidden business logic filters
-3. **Build Layout in UI** — add tiles, choose viz types, arrange the grid
-4. **Iterate via API** — update filters, modify model fields, extract queries
+2. **Build in UI** — add tiles, choose viz types, arrange the grid, set filters
+3. **Iterate via API** — update model fields, extract queries for reuse
 
 ## Dashboard Downloads
 
