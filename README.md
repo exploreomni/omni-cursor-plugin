@@ -1,3 +1,27 @@
+> [!CAUTION]
+> **This repository is deprecated and no longer maintained.**
+> All skills, agents, and rules have been consolidated into [`exploreomni/omni-agent-skills`](https://github.com/exploreomni/omni-agent-skills), which supports Claude Code, Cursor, OpenAI Codex, Snowflake Cortex Code, GitHub Copilot, Gemini CLI, and other skills.sh-compatible agents.
+
+## Migrating
+
+Uninstall the old plugin and install the new one:
+
+```text
+# Remove the old plugin
+/remove-plugin omni-cursor-plugin
+
+# Install the new unified plugin
+/add-plugin https://github.com/exploreomni/omni-agent-skills.git
+```
+
+The new repo includes the same 8 skills, 3 subagents, and 3 `.mdc` rules, plus additional skills like `omni-ai-eval` and `omni-integrations`.
+
+---
+
+_The original README is preserved below for reference._
+
+---
+
 # Omni Analytics Plugin for Cursor
 
 A Cursor plugin that helps analytics engineers and data teams work with [Omni Analytics](https://omni.co) programmatically through Omni's REST APIs.
